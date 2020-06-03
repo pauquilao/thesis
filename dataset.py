@@ -58,9 +58,14 @@ class Dataset:
         self.notprone = notprone
         self.file_ext = "*.tif"
 
-    def set_file_ext(self, extension):
+    @property
+    def file_ext(self):
+        return self.__file_ext
+
+    @file_ext.setter
+    def file_ext(self, ext):
         """Alters the default image file extension (i.e. .tif)."""
-        self.file_ext = extension
+        self.__file_ext = ext
 
     def load_layers(self):
         """Prepare layers for neural network model."""

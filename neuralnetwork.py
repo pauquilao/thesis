@@ -20,7 +20,7 @@ from dataset import *  # user-defined module
 class Neural_Network(object):
     def __init__(self, *args, **kwargs):
         # Layers
-        self.layers = args
+        self.__layers = args
 
         self.input_size = self.layers[0] + 1  # + 1 for bias
         self.hidden_size = self.layers[1]  # number of hidden neurons
@@ -33,15 +33,15 @@ class Neural_Network(object):
         # Hyperparameters
         if len(kwargs.values()) == 1:
             if "lr" in kwargs:
-                self.lrate = kwargs["lr"]
+                self.__lrate = kwargs["lr"]
             else:
                 # Default value for lrate
-                self.lrate = 0.01
-                self.momentum = kwargs["mu"]
+                self.__lrate = 0.01
+                self.__momentum = kwargs["mu"]
 
         elif len(kwargs.values()) > 1:
-            self.lrate = kwargs["lr"]
-            self.momentum = kwargs["mu"]
+            self.__lrate = kwargs["lr"]
+            self.__momentum = kwargs["mu"]
 
         self.cache_W1 = np.zeros(self.W1.shape)  # holds input-to-hidden weights for momentum
         self.cache_W2 = np.zeros(self.W2.shape)  # holds hidden-to-output weights for momentum
@@ -73,7 +73,7 @@ class Neural_Network(object):
         return dx
 
     def forward(self, X):
-        """Forward propagation through the network."""
+        """Forward propagation of input vectors up to output layer."""
         self.z = np.dot(X, self.W1)
         self.z2 = self.lrelu(self.z)  # activation on hidden layer
         self.z3 = np.dot(self.z2, self.W2)
@@ -81,12 +81,12 @@ class Neural_Network(object):
         return o
 
     def backward(self, X, y, o):
-        """Backward propagation to opmtimize weights."""
+        """Backward propagation of error using chain rule to opmtimize weights."""
         self.o_error = y - o  # loss function
-        self.o_delta = self.o_error * self.sigmoid_prime(o)  # applying derivative of sigmoid to error
+        self.o_delta = self.o_error * self.sigmoid_prime(o)  # applying derivative of logistic to error
 
         self.z2_error = self.o_delta.dot(self.W2.T)
-        self.z2_delta = self.z2_error * self.lrelu_prime(self.z2)  # applying derivative of sigmoid to z2 error
+        self.z2_delta = self.z2_error * self.lrelu_prime(self.z2)  # applying derivative of leaky relu to z2 error
 
         # Convert to 2d array to handle 1x1 vectors
         X = np.atleast_2d(X)
@@ -108,10 +108,15 @@ class Neural_Network(object):
         self.cache_W1 = dw1
         self.cache_W2 = dw2
 
+        # RMSE
+        error = np.sqrt(np.mean(self.o_error**2))
+        return error
+
     def train(self, X, y):
         """Main learning method of the model."""
         o = self.forward(X)
-        self.backward(X, y, o)
+        rmse_train = self.backward(X, y, o)
+        return rmse_train
 
     def compute_error(self, X, y):
         """Computes RMSE of feeded dataset after a full pass."""
@@ -195,8 +200,8 @@ class Neural_Network(object):
 
         # Map weights to factors
         f = layers
-        d_ave = dict(zip(f, m_ave[:10]))    # exclude bias, average weight
-        d_max = dict(zip(f, m_max[:10]))    # exclude bias, max weight
+        d_ave = dict(zip(f, m_ave[:-1]))    # exclude bias, average weight
+        d_max = dict(zip(f, m_max[:-1]))    # exclude bias, max weight
 
         # Save weights if error in testing data is reasonable
         with open(os.path.join(op, filename), "a") as data:
@@ -265,28 +270,24 @@ class Neural_Network(object):
         if os.path.isfile(out_path):
             print("\nLandslide susceptility index was exported.")
 
-    # Getters
-    def get_structure(self):
+    @property
+    def layers(self):
         """Returns the initialized NN structure."""
-        return self.layers
+        return self.__layers
 
-    def get_weights(self):
-        """Returns the weights of the model."""
-        return [self.W1, self.W2]
-
-    def get_lrate(self):
+    @property
+    def lrate(self):
         """Returns the set learning rate."""
-        return self.lrate
+        return self.__lrate
 
-    def get_momentum(self):
+    @property
+    def momentum(self):
         """Returns the set momentum factor."""
-        return self.momentum
+        return self.__momentum
 
-    # Setters
-    def set_weights(self, weight):
+    def set_weights(self):
         """Set the weights for final forward pass (excluding bias weights)."""
-        self.W1 = weight[0][0:-1]  # exclude the bias for prediction
-        self.W2 = weight[1]
+        self.W1 = self.W1[0:-1]  # exclude the bias for prediction
 
 # end of Neural_Network class
 
@@ -318,13 +319,10 @@ class BGD(Neural_Network):
 
         for i in range(epoch):
             # Shuffle training set every epoch
-            np.random.shuffle(training)
-
-            # Start training
-            self.train(X_train_1o, y_train_1o)
+#             np.random.shuffle(training)
 
             # Training loss
-            rmse_train = self.compute_error(X_train_1o, y_train_1o)
+            rmse_train = self.train(X_train_1o, y_train_1o)
 
             # Validation loss
             rmse_val = self.compute_error(X_val_1o, y_val_1o)
@@ -391,11 +389,8 @@ class SGD(Neural_Network):
             # Stochastic sampling
             n = np.random.choice(X_train_1o.shape[0])
 
-            # Start training
-            self.train(X_train_1o[n], y_train_1o[n])
-
             # Training loss
-            rmse_train = self.compute_error(X_train_1o[n], y_train_1o[n])
+            rmse_train = self.train(X_train_1o[n], y_train_1o[n])
 
             # Validation loss
             rmse_val = self.compute_error(X_val_1o, y_val_1o)
@@ -443,7 +438,7 @@ class MGD(Neural_Network):
         self.batch_size = args[-1]
 
     def train_MGD(self, *args):
-        """Performs simulation using mini-batch gradien descent"""
+        """Performs simulation using mini-batch gradien descent."""
         print(f"\nStarting MGD Training with NN structure:{self.layers}, lrate={self.lrate}, mu={self.momentum}:")
 
         training = args[0][0]
@@ -488,10 +483,7 @@ class MGD(Neural_Network):
                 minibatch_y = y_batches[j]
 
                 # Train per mini-batch
-                self.train(minibatch_x, minibatch_y)
-
-                # Train loss for each mini-batch
-                rmse_train = self.compute_error(minibatch_x, minibatch_y)
+                rmse_train = self.train(minibatch_x, minibatch_y)
 
                 # Get average training cost for each epoch
                 ave_cost_train += rmse_train / self.total_batch
@@ -513,8 +505,10 @@ class MGD(Neural_Network):
 
             # Per mini-batch validation
             ave_cost_val = 0
+
             x_val = np.array_split(X_val_1o, val_batch)
             y_val = np.array_split(y_val_1o, val_batch)
+
             for v in range(val_batch):
                 mb_val_x = x_val[v]
                 mb_val_y = y_val[v]
@@ -636,14 +630,13 @@ if __name__ == "__main__":
 
     # Draw network output values
     for i in range(X_test_1o.shape[0]):
-        y[i] = mgd.forward(X_test_1o[i])
+        y[i] = mgd.forward(x[i])
     plt.plot(y, '.', color='r', alpha=0.6, label="Predicted value")
-
     plt.legend(loc=2)
 
     # Save plot
     op = r"D:\MS Gme\Thesis\Final Parameters\ANN\sublime_run\plots"
-    fn = f"{h_size}_{mgd.get_lrate()}_{mgd.get_momentum()}_{epoch}"
+    fn = f"{h_size}_{mgd.lrate}_{mgd.momentum}_{mgd.term_iter}_{mean_error}"
 
     if not os.path.isfile(os.path.join(op, fn)):
         plt.savefig(os.path.join(op, f"raw_leaky_test_1o_{fn}.jpg"))
@@ -660,7 +653,7 @@ if __name__ == "__main__":
     # X_lsi = lsi_ds[0]
     # y_lsi = lsi_ds[1]
 
-    # mgd.set_weights(mgd.get_weights())  # exxlude the bias weights
+    # mgd.set_weights()  # exxlude the bias weights
 
     # # Execute forward pass to the whole area per sample
     # for i in range(X_lsi.shape[0]):
@@ -677,7 +670,7 @@ if __name__ == "__main__":
     #     os.mkdir(folder)
 
     # fn = "lsi_MGD_leaky"
-    # ref_data = os.path.join(fuzzy_path, "itogon_grid.tif")
+    # ref_data = os.path.join(fuzzy_path, "j_itogon_grid.tif")
     # mgd.export_to_image(ref_data, os.path.join(op, fn), lsi)
 
     print("-------------------------------------------------------")

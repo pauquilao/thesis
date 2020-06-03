@@ -42,3 +42,23 @@ Date and time: 05/22/20, 09:25:28
 NN structure: (9, 25, 1, 32)
 lrate=0.01, momentum=0.9, error: 0.02654081601400055
 
+Date and time: 05/27/20, 21:18:37
+Optimizer: MGD
+NN structure: (9, 25, 1, 32)
+lrate=0.01, momentum=0.9, error: 0.06351911011733093
+
+Date and time: 05/27/20, 21:18:37
+Optimizer: MGD
+NN structure: (9, 25, 1, 32)
+lrate=0.01, momentum=0.9, error: 0.06351911011733093
+
+Date and time: 05/27/20, 21:18:37
+Optimizer: MGD
+NN structure: (9, 25, 1, 32)
+lrate=0.01, momentum=0.9, error: 0.06351911011733093
+
+Date and time: 05/27/20, 21:41:06
+Optimizer: MGD
+NN structure: (9, 25, 1, 32)
+lrate=0.01, momentum=0.9, error: 0.05732056249293955
+
