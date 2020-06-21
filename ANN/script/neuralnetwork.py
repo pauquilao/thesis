@@ -20,7 +20,7 @@ from dataset import *  # user-defined module
 class Neural_Network(object):
     def __init__(self, *args, **kwargs):
         # Layers
-        self.__layers = args
+        self.layers = args
 
         self.input_size = self.layers[0] + 1  # + 1 for bias
         self.hidden_size = self.layers[1]  # number of hidden neurons
@@ -31,17 +31,15 @@ class Neural_Network(object):
         self.W2 = np.random.uniform(0.1, 0.3, size=(self.hidden_size, self.output_size))
 
         # Hyperparameters
-        if len(kwargs.values()) == 1:
-            if "lr" in kwargs:
-                self.__lrate = kwargs["lr"]
-            else:
-                # Default value for lrate
-                self.__lrate = 0.01
-                self.__momentum = kwargs["mu"]
+        if "lr" not in kwargs:
+            self.lrate = 0.1  # default lrate value
+        else:
+            self.lrate = kwargs["lr"]
 
-        elif len(kwargs.values()) > 1:
-            self.__lrate = kwargs["lr"]
-            self.__momentum = kwargs["mu"]
+        if "mu" not in kwargs:
+            self.momentum = 0.1  # default momentum value
+        else:
+            self.momentum = kwargs["mu"]
 
         self.cache_W1 = np.zeros(self.W1.shape)  # holds input-to-hidden weights for momentum
         self.cache_W2 = np.zeros(self.W2.shape)  # holds hidden-to-output weights for momentum
@@ -93,7 +91,7 @@ class Neural_Network(object):
         self.z2_delta = np.atleast_2d(self.z2_delta)
 
         # Momentum update to input-to-hidden weights
-        dw1 = (X.T.dot(self.z2_delta) * self.lrate) + (self.momentum * self.cache_W1)  # delta input to hidden weights for momentum
+        dw1 = (X.T.dot(self.z2_delta) * self.lrate) + (self.momentum * self.cache_W1)  # delta input to hidden weights
         self.W1 += dw1
 
         # Convert to 2d array to handle 1x1 vectors
@@ -101,7 +99,7 @@ class Neural_Network(object):
         self.o_delta = np.atleast_2d(self.o_delta)
 
         # Momentum update to hidden-to-output weights
-        dw2 = (self.z2.T.dot(self.o_delta) * self.lrate) + (self.momentum * self.cache_W2)  # delta hidden to output weights for momentum
+        dw2 = (self.z2.T.dot(self.o_delta) * self.lrate) + (self.momentum * self.cache_W2)  # delta hidden to output weights
         self.W2 += dw2
 
         # Store previous weights
@@ -206,7 +204,7 @@ class Neural_Network(object):
         # Save weights if error in testing data is reasonable
         with open(os.path.join(op, filename), "a") as data:
             data.write("Date and time: {}, {}\n".format(self.date, self.time))
-            data.write("NN structure: {}\n".format(self.layers[:-1]))
+            data.write("NN structure: {}\n".format(self.layers))
             data.write("Hyperparameters: ")
             data.write("lrate={}, ".format(self.lrate))
             data.write("mu={}, ".format(self.momentum))
@@ -256,7 +254,7 @@ class Neural_Network(object):
             sys.exit(1)
 
         dataset.GetRasterBand(1).WriteArray(lsi)
-        dataset.GetRasterBand(1).SetNodataValue(-9999)
+        dataset.GetRasterBand(1).SetNoDataValue(-9999)
 
         # Add GeoTranform and Projection
         geotrans = data0.GetGeoTransform()  # get GeoTranform from ref 'data0'
@@ -268,22 +266,7 @@ class Neural_Network(object):
 
         # Check if exported correctly
         if os.path.isfile(out_path):
-            print("\nLandslide susceptility index was exported.")
-
-    @property
-    def layers(self):
-        """Returns the initialized NN structure."""
-        return self.__layers
-
-    @property
-    def lrate(self):
-        """Returns the set learning rate."""
-        return self.__lrate
-
-    @property
-    def momentum(self):
-        """Returns the set momentum factor."""
-        return self.__momentum
+            print("Landslide susceptility index was exported.")
 
     def set_weights(self):
         """Set the weights for final forward pass (excluding bias weights)."""
@@ -318,9 +301,6 @@ class BGD(Neural_Network):
         self.loss_val = []
 
         for i in range(epoch):
-            # Shuffle training set every epoch
-#             np.random.shuffle(training)
-
             # Training loss
             rmse_train = self.train(X_train_1o, y_train_1o)
 
@@ -434,7 +414,7 @@ class MGD(Neural_Network):
     """Mini-batch Gradient Descent."""
 
     def __init__(self, *args, **kwargs):
-        Neural_Network.__init__(self, *args, **kwargs)
+        Neural_Network.__init__(self, *args[:-1], **kwargs)
         self.batch_size = args[-1]
 
     def train_MGD(self, *args):
@@ -599,7 +579,7 @@ if __name__ == "__main__":
     xlabel = "Epoch"
     ylabel = "Average Cost"
     name = "raw_MGD_leaky_1o"
-    mgd.plot_loss_curve(xlabel, ylabel, name, save=True)
+    mgd.plot_loss_curve(xlabel, ylabel, name, save=False)
 
     # Predict using testing samples
     # Forward pass using the whole dataset
@@ -643,7 +623,7 @@ if __name__ == "__main__":
 
     plt.show()
 
-    #---------------------------------------------------------------#
+    # --------------------------------------------------------------- #
     # # Generate LSI using the optimized weights
     # print("\nGenerating lsi using the best fit model.")
     # fuzzy_path = r"D:\MS Gme\Thesis\Final Parameters\Samples\for_lsi\Fuzzy\fuzzy2"

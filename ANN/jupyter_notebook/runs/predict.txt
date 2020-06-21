@@ -62,3 +62,13 @@ Optimizer: MGD
 NN structure: (9, 25, 1, 32)
 lrate=0.01, momentum=0.9, error: 0.05732056249293955
 
+Date and time: 06/03/20, 20:48:23
+Optimizer: MGD
+NN structure: (9, 16, 1)
+lrate=0.1, momentum=0.1, error: 0.07303567716987504
+
+Date and time: 06/03/20, 22:33:16
+Optimizer: MGD
+NN structure: (9, 16, 1)
+lrate=0.1, momentum=0.1, error: 0.08122365725270793
+

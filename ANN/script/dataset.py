@@ -45,7 +45,7 @@ def get_relevant_val(array):
     import warnings
     warnings.filterwarnings("ignore", category=RuntimeWarning)
 
-    array = array[array > -99]
+    array = array[array > -999]
     return array
 
 # end of helper functions
@@ -58,16 +58,7 @@ class Dataset:
         self.notprone = notprone
         self.file_ext = "*.tif"
 
-    @property
-    def file_ext(self):
-        return self.__file_ext
-
-    @file_ext.setter
-    def file_ext(self, ext):
-        """Alters the default image file extension (i.e. .tif)."""
-        self.__file_ext = ext
-
-    def load_layers(self):
+    def load_layers(self, split=[0.8, 0.2]):
         """Prepare layers for neural network model."""
 
         # Read all landslide drivers
@@ -180,7 +171,7 @@ class Dataset:
 
         # Split dataset to training set and testing set
         print("Splitting samples to training, validation, and testing sets...")
-        train_split = int(0.8 * X_p.shape[0])  # 80% of total dataset
+        train_split = int(split[0] * X_p.shape[0])  # 80% of total dataset
 
         X_p_split = np.split(X_p, [train_split])
         X_p_train = X_p_split[0]  # get the 80% of the dataset
@@ -226,7 +217,7 @@ class Dataset:
 
         # Split train into train and validation sets
         # 80:20 ratio
-        train_val_split = int(0.8 * X_train_1o.shape[0])
+        train_val_split = int((1 - split[1]) * X_train_1o.shape[0])
         X_train_split = np.split(X_train_1o, [train_val_split])
         y_train_split = np.split(y_train_1o, [train_val_split])
 
@@ -289,11 +280,13 @@ def main():
     fp_notprone = r"D:\ms gme\thesis\final parameters\Samples\Final\no_landslide"
 
     my_thesis = Dataset(fp_prone, fp_notprone)
-    datasets = my_thesis.load_layers()
+
+    split = [0.8, 0.2]  # train, val sets
+    datasets = my_thesis.load_layers(split)
 
     return datasets
 
 
 if __name__ == "__main__":
-    pass
-    # main()
+    # pass
+    main()
