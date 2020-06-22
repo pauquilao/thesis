@@ -71,7 +71,7 @@ class Cellular_Automata:
                     if mean_fd <= 5 and mean_fd >= 3.5 and mean_LSI <= 5 and mean_LSI >= 3.5:
                         self.landslide_predicted[i][j] = 1
 
-                # if raser dimension is not divisible by the kernel size
+                # if raster dimension is not divisible by the kernel size
                 except IndexError:
                     continue
 
@@ -112,3 +112,5 @@ if __name__ == "__main__":
     # Export
     out_fn = f"D:/ms gme/thesis/final parameters/ca/data/output/ls1_3x3_new.tif"
     ca_model.export_predicted(out_fn)
+
+
