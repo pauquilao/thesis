@@ -154,7 +154,7 @@ class Neural_Network(object):
             suffix = f"{str(self.hidden_size)}_{str(self.lrate)}_{str(self.momentum)}"
 
             if not os.path.isfile(os.path.join(op, name)):
-                plt.savefig(os.path.join(op, f"{name}_{suffix}.jpg"))
+                plt.savefig(os.path.join(op, f"{name}_{suffix}.jpg"), dpi=300)
             else:
                 print("Name already exists.")
 
@@ -551,7 +551,8 @@ if __name__ == "__main__":
     my_thesis = Dataset(fp_prone, fp_notprone)
 
     # Load landslide factors
-    datasets = my_thesis.load_layers()
+    split = [0.8, 0.2]  # train, val sets
+    datasets = my_thesis.load_layers(split)
     train_val_sets = datasets[0:2]
     test_set = datasets[2]
 
@@ -582,7 +583,7 @@ if __name__ == "__main__":
     mgd.plot_loss_curve(xlabel, ylabel, name, save=False)
 
     # Predict using testing samples
-    # Forward pass using the whole dataset
+    # Forward pass using the whole testing set
     X_test_1o = test_set[..., :10]
     y_test_1o = test_set[..., [-1]]
 
@@ -599,7 +600,7 @@ if __name__ == "__main__":
     mgd.save_summary(filename, layers)
 
     # Plot target and predicted values
-    plt.figure(figsize=(10, 5))
+    plt.figure(figsize=(8, 5))
     plt.xlabel("Test samples")
     plt.ylabel("Cell Value")
 
@@ -619,7 +620,7 @@ if __name__ == "__main__":
     fn = f"{h_size}_{mgd.lrate}_{mgd.momentum}_{mgd.term_iter}_{mean_error}"
 
     if not os.path.isfile(os.path.join(op, fn)):
-        plt.savefig(os.path.join(op, f"raw_leaky_test_1o_{fn}.jpg"))
+        plt.savefig(os.path.join(op, f"raw_leaky_test_1o_{fn}.jpg"), dpi=300)
 
     plt.show()
 

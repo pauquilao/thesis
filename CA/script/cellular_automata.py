@@ -38,7 +38,7 @@ def create_png(path):
     options_list = ["-ot Byte", "-of PNG", "-b 1", "-scale", "-outsize 1000% 1000%"]
     options_string = " ".join(options_list)
     for tif in sorted_tif_paths:
-        out_fn = f"ls_pred_{regex.findall(tif)[1]}_mask.png"
+        out_fn = f"ls_pred_{regex.findall(tif)[-1]}_mask.png"
         gdal.Translate(os.path.join(op, out_fn), tif, options=options_string)
 
     if os.path.isdir(op):
