@@ -150,11 +150,12 @@ class Dataset:
         X_p_norm = []
         X_np_norm = []
         for i in range(len(X_p)):
-            norm_p = (X_p_flat[i] - min(X_p_flat[i])) / (max(X_p_flat[i]) - min(X_p_flat[i]))
-            norm_np = (X_np_flat[i] - min(X_np_flat[i])) / (max(X_np_flat[i]) - min(X_np_flat[i]))
+            norm_p = 0.8 * ((X_p_flat[i] - X_p_flat[i].min()) / (X_p_flat[i].max() - X_p_flat[i].min())) + 0.1
+            norm_np = 0.8 * ((X_np_flat[i] - X_np_flat[i].min()) / (X_np_flat[i].max() - X_np_flat[i].min())) + 0.1
 
             X_p_norm.append(norm_p)
             X_np_norm.append(norm_np)
+
         print("All vectors are scaled in the interval [0, 1].")
         print()
 

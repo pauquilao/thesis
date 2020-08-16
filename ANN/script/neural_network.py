@@ -134,7 +134,7 @@ class Neural_Network(object):
 
     # Plot method
     def plot_loss_curve(self, xlabel, ylabel, name, save=True):
-        """Creates a loss curve plot."""
+        """Creates a learning curve plot."""
         plt.figure(figsize=(10, 5))
         plt.plot(self.loss_train, label="Training Loss")
         plt.plot(self.loss_val, label="Validation Loss")
@@ -267,10 +267,6 @@ class Neural_Network(object):
         # Check if exported correctly
         if os.path.isfile(out_path):
             print("Landslide susceptility index was exported.")
-
-    def set_weights(self):
-        """Set the weights for final forward pass (excluding bias weights)."""
-        self.W1 = self.W1[0:-1]  # exclude the bias for prediction
 
 # end of Neural_Network class
 
@@ -470,19 +466,6 @@ class MGD(Neural_Network):
 
             self.loss_train.append(ave_cost_train)
 
-#             # Validation using the whole validation set
-#             rmse_val = self.compute_error(X_val_1o, y_val_1o)
-#             self.loss_val.append(rmse_val)
-
-#             # Print result per epoch
-#             print("epoch: {}".format(i))
-#             print("Training loss: {}".format(ave_cost_train))
-#             print("Validation loss: {}".format(rmse_val))
-#             print()
-
-#             if rmse_val <= RMSE:
-#                 break
-
             # Per mini-batch validation
             ave_cost_val = 0
 
@@ -566,42 +549,43 @@ if __name__ == "__main__":
     lrate = 0.01
     momentum = 0.9
     batch_size = 32
-    mgd = MGD(in_size, h_size, out_size, batch_size, lr=lrate, mu=momentum)
+    network = MGD(in_size, h_size, out_size, batch_size, lr=lrate, mu=momentum)
 
     # Initialize Root Mean Square Error
     RMSE = 0.01
     # Initialize number of epochs
     epoch = 3000
 
-    mgd.train_MGD(train_val_sets, RMSE, epoch)
+    network.train_MGD(train_val_sets, RMSE, epoch)
     # end of training
 
     # Plot loss curve
     xlabel = "Epoch"
     ylabel = "Average Cost"
-    name = "raw_MGD_leaky_1o"
-    mgd.plot_loss_curve(xlabel, ylabel, name, save=False)
+    name = "learning_curve"
+    network.plot_loss_curve(xlabel, ylabel, name, save=True)
 
     # Predict using testing samples
     # Forward pass using the whole testing set
     X_test_1o = test_set[..., :10]
     y_test_1o = test_set[..., [-1]]
 
-    mgd.predict(X_test_1o, y_test_1o)
+    network.predict(X_test_1o, y_test_1o)
 
     # Write results to disk
     # Predicted
-    mgd.save_predict(X_test_1o, y_test_1o)
+    network.save_predict(X_test_1o, y_test_1o)
 
     # Summary of results
     # Get layers name with the same index as input vector
-    layers = [file for file in os.listdir(fp_prone) if os.path.isfile(os.path.join(fp_prone, file))]
-    filename = "runs_MGD_leaky.txt"
-    mgd.save_summary(filename, layers)
+    layers = [file for file in os.listdir(fp_prone) if os.path.isfile(file)]
+    filename = f"{type(network).__name__}_summary.txt"
+    network.save_summary(filename, layers)
 
     # Plot target and predicted values
+    plt.style.use("default")
     plt.figure(figsize=(8, 5))
-    plt.xlabel("Test samples")
+    plt.xlabel("Test Sample")
     plt.ylabel("Cell Value")
 
     x, y = copy.deepcopy(X_test_1o), copy.deepcopy(y_test_1o)
@@ -610,49 +594,56 @@ if __name__ == "__main__":
     plt.plot(y, "o", color="b", label="Target value")
 
     # Draw network output values
+    loss_testing = []
+
     for i in range(X_test_1o.shape[0]):
-        y[i] = mgd.forward(x[i])
-    plt.plot(y, '.', color='r', alpha=0.6, label="Predicted value")
-    plt.legend(loc=2)
+        y[i] = network.forward(x[i])
+        rmse = np.sqrt(np.mean((y_test_1o[i] - y[i])**2))
+        loss_testing.append(rmse)
+
+    mean_error = np.mean(loss_testing)
+
+    plt.plot(y, '.', color='r', alpha=0.5, label="Predicted value")
+    plt.legend(loc=5)
 
     # Save plot
-    op = r"D:\MS Gme\Thesis\Final Parameters\ANN\sublime_run\plots"
-    fn = f"{h_size}_{mgd.lrate}_{mgd.momentum}_{mgd.term_iter}_{mean_error}"
+    op = r"D:\ms gme\thesis\manuscript\plots\leaky_relu_tests\for manus"
+    fn = f"{h_size}_{network.lrate}_{network.momentum}_{network.term_iter}_{mean_error}"
 
     if not os.path.isfile(os.path.join(op, fn)):
-        plt.savefig(os.path.join(op, f"raw_leaky_test_1o_{fn}.jpg"), dpi=300)
+        plt.savefig(os.path.join(op, f"{fn}.jpg"), dpi=300)
 
     plt.show()
 
     # --------------------------------------------------------------- #
-    # # Generate LSI using the optimized weights
-    # print("\nGenerating lsi using the best fit model.")
-    # fuzzy_path = r"D:\MS Gme\Thesis\Final Parameters\Samples\for_lsi\Fuzzy\fuzzy2"
-    # tiff = "*.tif"
+    # Generate LSI using the optimized weights
+    print("\nGenerating lsi using the best fit model...")
+    fuzzy_path = r"D:\MS Gme\Thesis\Final Parameters\Samples\for_lsi\Fuzzy\fuzzy3"
 
-    # lsi_ds = my_thesis.load_fuzzified_layers(fuzzy_path, tiff)
-    # X_lsi = lsi_ds[0]
-    # y_lsi = lsi_ds[1]
+    fuzzy = Dataset(fp_prone, fp_notprone)
+    lsi_ds = fuzzy.load_fuzzified_layers(fuzzy_path)
+    X_lsi = lsi_ds[0]
+    y_lsi = lsi_ds[1]
 
-    # mgd.set_weights()  # exxlude the bias weights
+    # Execute forward pass to the whole area per sample
+    for i in range(X_lsi.shape[0]):
+        y_lsi[i] = network.forward(X_lsi[i])
 
-    # # Execute forward pass to the whole area per sample
-    # for i in range(X_lsi.shape[0]):
-    #     y_lsi[i] = mgd.forward(X_lsi[i])
+    print("Finished predicting lsi for the whole study area.")
 
-    # # Reshape computed lsi to 2D array
-    # lsi = y_lsi.reshape(6334, 3877)
+    # Reshape computed lsi to 2D array
+    lsi = y_lsi.reshape(6334, 3877)
 
-    # # Export generated lsi
-    # folder = "lsi"
-    # out_path = os.getcwd()
-    # op = os.path.join(out_path, folder)
-    # if not os.path.exists(op):
-    #     os.mkdir(folder)
+    # Export generated lsi
+    folder = "lsi"
+    out_path = os.getcwd()
+    op = os.path.join(out_path, folder)
+    if not os.path.exists(op):
+        os.mkdir(folder)
 
-    # fn = "lsi_MGD_leaky"
-    # ref_data = os.path.join(fuzzy_path, "j_itogon_grid.tif")
-    # mgd.export_to_image(ref_data, os.path.join(op, fn), lsi)
+    fn = f"{type(network).__name__}_LSI.tif"
+    ref_data = os.path.join(fuzzy_path, "j_itogon_grid.tif")
+    network.export_to_image(ref_data, os.path.join(op, fn), )
 
     print("-------------------------------------------------------")
     print("\nThe script finished its execution after %.2f seconds" % (time.process_time() - start_time))
